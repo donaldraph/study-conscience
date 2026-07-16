@@ -5,6 +5,16 @@ real time. Newest entries at the top of each phase.
 
 ## Phase 3 — live model and delivery
 
+### 2026-07-16 — Telegram wired and delivering for real
+
+- send_telegram now really posts to the Bot API, creds from Secrets Manager, plain
+  text (the manifest breaks Markdown), 4096-char trim, stub fallback if the secret
+  is missing. The drill manifest is now included in the message so the brief is
+  actually actionable.
+- Proven live: invoked the agent, `[telegram] sent ok=True`, the full brief (real
+  Gemini judgment + drill, ~1982 chars) arrived in the chat. Email still stubbed
+  until SES creds land.
+
 ### 2026-07-16 — Gemini wired and proven live
 
 - Replaced the model stub with a real Gemini call: structured JSON output against a
