@@ -45,7 +45,12 @@ All three run on Kubernetes v1.35. My kind cluster runs v1.35.1 to match.
 
 ## Current status
 
-Building. See BUILD_LOG.md for the running journal.
+Phases 1 and 2 done and deployed to AWS (us-east-1). The whole nightly path runs
+end to end with the model stubbed: real audit data rolls up locally, POSTs to the
+keyed ingest, lands in DynamoDB, the reasoning agent judges avoidance
+deterministically and writes the morning brief, and the stubbed delivery logs
+exactly what it would send. Phase 3 (real model, real delivery, dashboard) is next.
+See BUILD_LOG.md for the running journal and docs/runs for the proofs.
 
 The model layer (Google Gemini, gemini-2.5-flash) and both delivery channels
 (Telegram, email) are **stubbed** for now: typed input and output, a clear TODO,
