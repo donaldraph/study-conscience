@@ -17,6 +17,8 @@ import datetime as dt
 import json
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 
 from rollup import domain_map
 
@@ -130,6 +132,21 @@ def build_rollup(events, day, user):
     }
 
 
+def post_rollup(url, payload, token=None):
+    """POST the rollup JSON to the ingest endpoint. Returns the status code.
+
+    Only the compact rollup is sent, never the raw audit log. In Phase 1 the url
+    points at the local mock ingest; in Phase 2 it points at API Gateway.
+    """
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=body, method="POST")
+    req.add_header("Content-Type", "application/json")
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return resp.status, resp.read().decode("utf-8")
+
+
 def parse_args(argv):
     p = argparse.ArgumentParser(description="Roll up the kind audit log for one day.")
     p.add_argument("--date", help="local date YYYY-MM-DD (default: today)")
@@ -138,6 +155,8 @@ def parse_args(argv):
     p.add_argument("--log-path", default=DEFAULT_LOG_PATH)
     p.add_argument("--log-file", help="read a local log file instead of docker exec (for tests)")
     p.add_argument("--out", help="write the rollup JSON here (default: stdout)")
+    p.add_argument("--ingest-url", help="POST the rollup here (mock in Phase 1, API Gateway in Phase 2)")
+    p.add_argument("--ingest-token", help="bearer token for the ingest endpoint")
     return p.parse_args(argv)
 
 
@@ -157,8 +176,16 @@ def main(argv=None):
             fh.write(text + "\n")
         print(f"wrote {args.out}: {rollup['totals']['events_kept']} events, "
               f"{len(rollup['skills_touched'])} skills touched", file=sys.stderr)
-    else:
+    elif not args.ingest_url:
         print(text)
+
+    if args.ingest_url:
+        try:
+            status, resp = post_rollup(args.ingest_url, rollup, args.ingest_token)
+            print(f"posted to {args.ingest_url}: HTTP {status} {resp[:200]}", file=sys.stderr)
+        except urllib.error.URLError as exc:
+            print(f"post failed: {exc}", file=sys.stderr)
+            return None
     return rollup
 
 
