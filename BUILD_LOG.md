@@ -5,6 +5,27 @@ real time. Newest entries at the top of each phase.
 
 ## Phase 1 — local data path
 
+### 2026-07-16 — Step 1 done: audit logging on and proven
+
+- Cluster recreated at v1.35.1 with audit logging on. Ran six real kubectl actions
+  and confirmed 1183 structured JSON events, 98 from the human `kubernetes-admin`
+  user, each carrying verb, objectRef.resource, user, timestamp, and stage.
+- Full proof and the confirmed event schema: docs/runs/01-phase1-step1-audit-on.md.
+- Kubeconfig for this cluster lives at `~/.kube-study.conf` (see snag A). The rollup
+  reads via `docker exec`, so it does not depend on that.
+
+### 2026-07-16 — a third snag: extraArgs schema is version-specific
+
+- Symptom: recreate at v1.35.1 failed in kubeadm with `cannot unmarshal array into
+  ... extraArgs of type map[string]string`.
+- Root cause: kind emits kubeadm ClusterConfiguration as v1beta3 for v1.35.1, where
+  extraArgs is a map. The v1beta4 list-of-{name,value} form (correct for v1.36+) is
+  rejected. My earlier note had this backwards.
+- Fix: used the map form for extraArgs. Documented the version split in the config
+  comment so future me does not flip it again.
+- Reasoning: the failure mode is loud (kubeadm refuses to init), so no silent drift,
+  but it cost a recreate. Worth pinning the image and the schema together.
+
 ### 2026-07-16 — two snags on first cluster recreate
 
 **Snag A: kubeconfig writes fail, cluster context empty.**
