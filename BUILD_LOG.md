@@ -5,6 +5,17 @@ real time. Newest entries at the top of each phase.
 
 ## Phase 1 — local data path
 
+### 2026-07-16 — Phase 1 done: local data path proven end to end
+
+- Built the topic map, the rollup parser, a mock ingest, and the nightly cron.
+- Real data: today's rollup kept 73 resource events across 9 topics, every resource
+  mapped, POSTed to the mock and got HTTP 200. Cron wrapper ran clean.
+- Fixed a clarity issue mid-build: kubectl's non-resource calls (discovery, health)
+  were inflating the count as `?` resource, so they are now counted separately as
+  non_resource_requests, not mixed into the study signal.
+- Full write-up: docs/runs/02-phase1-rollup-and-cron.md.
+- Phase 1 boundary reached. Phase 2 is the CDK spine with a stubbed model call.
+
 ### 2026-07-16 — Step 1 done: audit logging on and proven
 
 - Cluster recreated at v1.35.1 with audit logging on. Ran six real kubectl actions
