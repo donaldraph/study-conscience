@@ -5,7 +5,10 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as scheduler from 'aws-cdk-lib/aws-scheduler';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as path from 'path';
+
+const GEMINI_SECRET_NAME = 'study-conscience/gemini';
 
 interface ApiStackProps extends cdk.StackProps {
   stage: string;
@@ -55,9 +58,23 @@ export class ApiStack extends cdk.Stack {
     table.grantReadWriteData(ingestFn);
 
     // The nightly agent: reads rollups, judges avoidance, writes the brief + drill.
-    // 30s timeout leaves room for the real Gemini call that replaces the stub.
-    const reasoningFn = makeFn('ReasoningFn', 'reasoning.handler', {}, 30, 512);
+    // 60s timeout and 512MB give the Gemini generate-and-grade call room to breathe.
+    const geminiSecret = secretsmanager.Secret.fromSecretNameV2(this, 'GeminiSecret', GEMINI_SECRET_NAME);
+    const reasoningFn = makeFn(
+      'ReasoningFn',
+      'reasoning.handler',
+      {
+        GEMINI_SECRET_NAME,
+        // gemini-flash-lite-latest: reliable + free-tier friendly. The pinned
+        // gemini-2.5-flash models are gated for new accounts; the *-latest aliases
+        // are not. Override with -c model=... at deploy.
+        MODEL_ID: this.node.tryGetContext('model') || 'gemini-flash-lite-latest',
+      },
+      60,
+      512,
+    );
     table.grantReadWriteData(reasoningFn);
+    geminiSecret.grantRead(reasoningFn);
 
     // EventBridge Scheduler at 03:00 Africa/Lagos. Scheduler (not a plain rule) so
     // the schedule is timezone-aware and never needs UTC/DST hand-math.
