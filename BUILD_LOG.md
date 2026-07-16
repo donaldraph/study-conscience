@@ -3,6 +3,31 @@
 Running journal at RUN-MD standard: symptom / root cause / fix / reasoning, in
 real time. Newest entries at the top of each phase.
 
+## Phase 2 — infra spine
+
+### 2026-07-16 — Phase 2 done: spine deployed, nightly path proven with stubs
+
+- Deployed two CDK stacks to us-east-1: the Dynamo table and the api stack (ingest
+  lambda + keyed endpoint, reasoning lambda, EventBridge Scheduler at 03:00 Lagos).
+- Proved it live: real rollup -> ingest (HTTP 200, 73 events) -> DynamoDB -> reasoning
+  lambda -> brief written with focus_domain=troubleshooting, model_source=STUB ->
+  stubbed delivery logged the full brief to CloudWatch. Full write-up in
+  docs/runs/03-phase2-spine-deployed.md.
+- The model and both delivery channels are stubbed and clearly labelled; nothing
+  presents stub output as real.
+
+### 2026-07-16 — two bugs the cloud run caught that local runs did not
+
+- Symptom: reasoning lambda threw `unsupported operand type(s) for -: 'float' and
+  'decimal.Decimal'`.
+- Root cause: DynamoDB returns numbers as Decimal. The analysis mixed float exam
+  weights with Decimal event counts read back from the table.
+- Fix: cast event counts to int as they enter the weight math. Separately, add a
+  `to_dynamo` helper so brief/drill writes (which carry floats) become Decimal, since
+  put_item refuses float.
+- Reasoning: these only surface against real DynamoDB, not the local pure-function
+  tests. Worth the deploy-and-invoke loop to flush them out before Phase 3.
+
 ## Phase 1 — local data path
 
 ### 2026-07-16 — Phase 1 done: local data path proven end to end
