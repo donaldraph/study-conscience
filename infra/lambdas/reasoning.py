@@ -64,6 +64,7 @@ def handler(event, context):
         "grade": out["grade"],
         "days_to_exam": an["days_to_exam"],
         "top_avoided": an["domains"][:5],
+        "domains": an["domains"],  # full exam x domain grid for the dashboard heatmap
         "decayed_skills": an["decayed_skills"][:5],
         "rollups_in_window": len(rollups),
     }
