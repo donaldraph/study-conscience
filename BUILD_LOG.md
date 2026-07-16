@@ -5,6 +5,21 @@ real time. Newest entries at the top of each phase.
 
 ## Phase 3 — live model and delivery
 
+### 2026-07-16 — dashboard live on CloudFront
+
+- Built the read API (GET /brief, GET /briefs, public, no key) and the S3 +
+  CloudFront hosting stack. The API base is injected as config.js at deploy so the
+  frontend never hardcodes it.
+- The dashboard shows days-to-exam tiles, the real avoidance judgment, a coverage
+  heatmap (exam x domain, sequential blue by gap, hover for the numbers), today's
+  drill with its manifest, decaying skills, and a gap trend that fills in over more
+  nights.
+- Stored the full domain grid on the brief (was only top-5) so the heatmap can draw
+  every cell.
+- Looked at it headless: renders clean in dark mode, heatmap reads correctly
+  (CKA troubleshooting darkest, over-touched domains lightest). Live at the
+  CloudFront URL in the README.
+
 ### 2026-07-16 — Telegram wired and delivering for real
 
 - send_telegram now really posts to the Bot API, creds from Secrets Manager, plain

@@ -45,11 +45,15 @@ All three run on Kubernetes v1.35. My kind cluster runs v1.35.1 to match.
 
 ## Current status
 
-Phases 1 and 2 done and deployed to AWS (us-east-1). The whole nightly path runs
-end to end with the model stubbed: real audit data rolls up locally, POSTs to the
-keyed ingest, lands in DynamoDB, the reasoning agent judges avoidance
-deterministically and writes the morning brief, and the stubbed delivery logs
-exactly what it would send. Phase 3 (real model, real delivery, dashboard) is next.
+Live and running nightly on AWS (us-east-1). The full path is real end to end:
+audit data rolls up locally at 02:45, POSTs to the keyed ingest, lands in DynamoDB;
+at 03:00 the reasoning agent judges avoidance deterministically, calls **Gemini**
+for the judgment and drill, writes the brief, and **sends it to Telegram**. A
+**dashboard** on CloudFront shows the coverage heatmap, the drill, and the trend.
+
+- Dashboard: https://d29t6r2650qgms.cloudfront.net
+- Still stubbed: **email** (SES creds pending). Model and Telegram are real.
+
 See BUILD_LOG.md for the running journal and docs/runs for the proofs.
 
 The model layer (Google Gemini, gemini-2.5-flash) and both delivery channels
