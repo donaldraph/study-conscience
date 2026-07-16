@@ -1,5 +1,6 @@
 """Shared helpers for every Lambda. Keeps the handlers small and consistent."""
 import datetime
+import decimal
 import json
 import os
 
@@ -57,6 +58,15 @@ def respond(status, body):
         "headers": {"Content-Type": "application/json", **CORS_HEADERS},
         "body": json.dumps(body, default=str),
     }
+
+
+def to_dynamo(obj):
+    """Make a dict safe to put_item: DynamoDB rejects float, wants Decimal.
+
+    Round-trips through JSON so every float becomes a Decimal in one shot. Cheap,
+    and it keeps the handlers from sprinkling Decimal() everywhere.
+    """
+    return json.loads(json.dumps(obj, default=str), parse_float=decimal.Decimal)
 
 
 def get_secret(name):

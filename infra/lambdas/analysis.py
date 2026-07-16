@@ -123,7 +123,9 @@ def _window_topic_counts(rollups):
     counts = {}
     for r in rollups:
         for topic, n in (r.get("by_topic") or {}).items():
-            counts[topic] = counts.get(topic, 0) + n
+            # DynamoDB hands numbers back as Decimal; cast so the weight math below
+            # stays plain float, not a float-minus-Decimal TypeError.
+            counts[topic] = counts.get(topic, 0) + int(n)
     return counts
 
 

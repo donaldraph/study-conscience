@@ -14,7 +14,7 @@ import analysis
 import delivery
 import model
 from common import (
-    TABLE, ROLLUP_PK, SKILL_PK, DRILL_PK, BRIEF_PK, local_today,
+    TABLE, ROLLUP_PK, SKILL_PK, DRILL_PK, BRIEF_PK, local_today, to_dynamo,
 )
 
 WINDOW_DAYS = int(os.environ.get("WINDOW_DAYS", "14"))
@@ -67,16 +67,16 @@ def handler(event, context):
         "decayed_skills": an["decayed_skills"][:5],
         "rollups_in_window": len(rollups),
     }
-    TABLE.put_item(Item=brief)
+    TABLE.put_item(Item=to_dynamo(brief))
 
     # Persist today's drill so tomorrow's run can grade it.
-    TABLE.put_item(Item={
+    TABLE.put_item(Item=to_dynamo({
         "PK": DRILL_PK,
         "SK": today.isoformat(),
         "date": today.isoformat(),
         "model_source": out["source"],
         **out["drill"],
-    })
+    }))
 
     # Hand the finished brief to delivery. Sends are stubbed, so this just logs the
     # formatted message to CloudWatch for now.
