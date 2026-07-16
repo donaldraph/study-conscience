@@ -2,6 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { DataStack } from '../lib/data-stack';
+import { ApiStack } from '../lib/api-stack';
 
 const app = new cdk.App();
 
@@ -16,7 +17,10 @@ const env: cdk.Environment = {
 const prefix = `sc-${stage}`;
 
 // Storage layer — the one table every other stack reads and writes.
-new DataStack(app, `${prefix}-data`, { env, stage });
+const data = new DataStack(app, `${prefix}-data`, { env, stage });
+
+// Compute + API — ingest endpoint now; reasoning, schedule, and read routes next.
+new ApiStack(app, `${prefix}-api`, { env, stage, table: data.table });
 
 cdk.Tags.of(app).add('project', 'study-conscience');
 cdk.Tags.of(app).add('stage', stage);

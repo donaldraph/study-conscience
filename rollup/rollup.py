@@ -142,7 +142,8 @@ def post_rollup(url, payload, token=None):
     req = urllib.request.Request(url, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
     if token:
-        req.add_header("Authorization", f"Bearer {token}")
+        # API Gateway expects the key in x-api-key, not Authorization.
+        req.add_header("x-api-key", token)
     with urllib.request.urlopen(req, timeout=15) as resp:
         return resp.status, resp.read().decode("utf-8")
 
