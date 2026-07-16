@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Study Conscience</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="viz-root">
+  <header class="topbar">
+    <div>
+      <h1>Study Conscience</h1>
+      <p class="sub">The domains I am avoiding, read from my cluster's audit log.</p>
+    </div>
+    <div class="topbar-right">
+      <span id="model-badge" class="badge" hidden></span>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">theme</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <p id="status" class="status">Loading the latest brief...</p>
+
+    <section id="tiles" class="tiles" hidden aria-label="Days to each exam"></section>
+
+    <section id="judgment-card" class="card" hidden>
+      <h2>What I am avoiding <span id="brief-date" class="muted-inline"></span></h2>
+      <p id="judgment" class="judgment"></p>
+    </section>
+
+    <section id="heatmap-card" class="card" hidden>
+      <h2>Coverage vs exam weight</h2>
+      <p class="card-note">Each cell is a domain. Darker means more under-touched for
+        its exam weight (a bigger gap between what I studied and what the exam
+        weights). Hover for the numbers.</p>
+      <div id="heatmap" class="heatmap"></div>
+      <div class="legend">
+        <span class="muted">less avoided</span>
+        <span id="legend-ramp" class="legend-ramp"></span>
+        <span class="muted">more avoided</span>
+      </div>
+    </section>
+
+    <section id="drill-card" class="card" hidden>
+      <h2>Today's drill <span id="drill-min" class="muted-inline"></span></h2>
+      <p id="drill-title" class="drill-title"></p>
+      <p id="drill-task" class="drill-task"></p>
+      <pre id="drill-manifest" class="manifest"></pre>
+    </section>
+
+    <section id="decay-card" class="card" hidden>
+      <h2>Skills going stale</h2>
+      <ul id="decay-list" class="decay-list"></ul>
+    </section>
+
+    <section id="trend-card" class="card" hidden>
+      <h2>Top-avoided gap over time</h2>
+      <p class="card-note">The gap for each night's most-avoided domain. It should
+        fall as I stop dodging.</p>
+      <div id="trend"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span id="foot-note"></span>
+  </footer>
+
+  <div id="tooltip" class="tooltip" role="status" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
