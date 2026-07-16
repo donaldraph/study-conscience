@@ -3,6 +3,8 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as scheduler from 'aws-cdk-lib/aws-scheduler';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 
 interface ApiStackProps extends cdk.StackProps {
@@ -51,6 +53,31 @@ export class ApiStack extends cdk.Stack {
 
     const ingestFn = makeFn('IngestFn', 'ingest.handler');
     table.grantReadWriteData(ingestFn);
+
+    // The nightly agent: reads rollups, judges avoidance, writes the brief + drill.
+    // 30s timeout leaves room for the real Gemini call that replaces the stub.
+    const reasoningFn = makeFn('ReasoningFn', 'reasoning.handler', {}, 30, 512);
+    table.grantReadWriteData(reasoningFn);
+
+    // EventBridge Scheduler at 03:00 Africa/Lagos. Scheduler (not a plain rule) so
+    // the schedule is timezone-aware and never needs UTC/DST hand-math.
+    const schedulerRole = new iam.Role(this, 'SchedulerRole', {
+      assumedBy: new iam.ServicePrincipal('scheduler.amazonaws.com'),
+    });
+    reasoningFn.grantInvoke(schedulerRole);
+
+    new scheduler.CfnSchedule(this, 'NightlyBrief', {
+      name: `sc-${props.stage}-nightly-brief`,
+      description: 'Runs the study-conscience agent every night at 03:00 Africa/Lagos.',
+      flexibleTimeWindow: { mode: 'OFF' },
+      scheduleExpression: 'cron(0 3 * * ? *)',
+      scheduleExpressionTimezone: 'Africa/Lagos',
+      target: {
+        arn: reasoningFn.functionArn,
+        roleArn: schedulerRole.roleArn,
+        retryPolicy: { maximumRetryAttempts: 2 },
+      },
+    });
 
     this.api = new apigw.RestApi(this, 'Api', {
       restApiName: `sc-${props.stage}`,
