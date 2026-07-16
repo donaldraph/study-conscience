@@ -1,0 +1,41 @@
+# kind cluster config for the `study` cluster, with API server audit logging on.
+#
+# Run from the repo root so the relative extraMounts hostPath resolves:
+#   kind delete cluster --name study
+#   kind create cluster --name study --config cluster/kind-config.yaml
+#   kind export kubeconfig --name study
+#
+# kindest/node:v1.35 uses kubeadm v1beta4, where apiServer.extraArgs is a LIST of
+# {name, value} objects, not a map. The old map form (in most pre-1.31 guides)
+# silently fails on 1.35.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            - name: audit-policy-file
+              value: /etc/kubernetes/audit/policy.yaml
+            - name: audit-log-path
+              value: /var/log/kubernetes/kube-apiserver-audit.log
+            - name: audit-log-maxsize
+              value: "100"
+            - name: audit-log-maxbackup
+              value: "5"
+          extraVolumes:
+            - name: audit-policy
+              hostPath: /etc/kubernetes/audit/policy.yaml
+              mountPath: /etc/kubernetes/audit/policy.yaml
+              readOnly: true
+              pathType: File
+            - name: audit-log
+              hostPath: /var/log/kubernetes
+              mountPath: /var/log/kubernetes
+              pathType: DirectoryOrCreate
+    extraMounts:
+      - hostPath: ./audit/policy.yaml
+        containerPath: /etc/kubernetes/audit/policy.yaml
+        readOnly: true

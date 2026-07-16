@@ -1,0 +1,19 @@
+# API server audit policy.
+#
+# Metadata level captures verb, resource, user, and timestamp for every request,
+# which is exactly what the rollup needs to map commands to exam domains. It does
+# NOT capture request or response bodies, so the log stays small and carries no
+# secret material.
+#
+# RequestReceived is dropped because it doubles every event with a pre-handler
+# stage that adds no signal.
+#
+# The policy logs broadly (all users, including system components). Filtering to
+# the human study user happens in the local rollup, in reviewable code, rather
+# than here, so the raw log stays honest and easy to audit.
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages:
+  - "RequestReceived"
+rules:
+  - level: Metadata
