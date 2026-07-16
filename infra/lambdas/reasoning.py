@@ -11,6 +11,7 @@ import os
 from boto3.dynamodb.conditions import Key
 
 import analysis
+import delivery
 import model
 from common import (
     TABLE, ROLLUP_PK, SKILL_PK, DRILL_PK, BRIEF_PK, local_today,
@@ -76,6 +77,10 @@ def handler(event, context):
         "model_source": out["source"],
         **out["drill"],
     })
+
+    # Hand the finished brief to delivery. Sends are stubbed, so this just logs the
+    # formatted message to CloudWatch for now.
+    delivery.deliver(brief)
 
     return {
         "date": today.isoformat(),
