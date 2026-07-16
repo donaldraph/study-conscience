@@ -1,0 +1,23 @@
+# node / cdk
+node_modules/
+cdk.out/
+*.tsbuildinfo
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# secrets and local env (never commit)
+.env
+*.env
+secrets.json
+
+# raw audit logs and local rollup output stay local, never shipped or committed
+*.audit.log
+kube-apiserver-audit*.log
+rollup/out/
+
+# os
+.DS_Store
