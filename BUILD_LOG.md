@@ -3,6 +3,36 @@
 Running journal at RUN-MD standard: symptom / root cause / fix / reasoning, in
 real time. Newest entries at the top of each phase.
 
+## Phase 3 — live model and delivery
+
+### 2026-07-16 — Gemini wired and proven live
+
+- Replaced the model stub with a real Gemini call: structured JSON output against a
+  response schema, key from Secrets Manager, three-try backoff on 429/503, and a
+  clearly-labelled stub fallback so the nightly job never crashes when the model is
+  down. Model id is configurable; default gemini-flash-lite-latest.
+- Proven live: the reasoning lambda produced a real avoidance judgment that quotes
+  the actual numbers (Troubleshooting 30% weight vs 1.4% activity, gap 0.286, 137
+  days) and a valid multi-line drill manifest.
+
+### 2026-07-16 — the model I was told to use is gated, and lite flattened YAML
+
+- Symptom A: `gemini-2.5-flash` (and `-lite`) returned 404 "no longer available to
+  new users" on generateContent, even though models.list showed them.
+- Root cause: pinned 2.5 models are gated for new accounts. The `*-latest` aliases
+  are not. `gemini-flash-latest` and `gemini-3.5-flash` were slow / 503 under load;
+  `gemini-flash-lite-latest` was fast and reliable.
+- Fix: default to `gemini-flash-lite-latest`, keep MODEL_ID overridable.
+- Symptom B: the first real drill came back as a single-line "manifest" with keys
+  run together (`apiVersion: v1 kind: Service ...`), which is not apply-able YAML.
+- Root cause: the lite model collapsed the YAML onto one line inside the JSON string.
+- Fix: prompt now demands real newlines with an explicit example, and the structural
+  check rejects any manifest with fewer than three newlines (marks it unvalidated).
+  Re-ran: got a proper 17-line static-pod drill with a failing livenessProbe.
+- Note: true apply-validation (apply to a throwaway namespace, confirm it breaks) can
+  only run on the local box, since the kind cluster is not reachable from the lambda.
+  Still to be added there.
+
 ## Phase 2 — infra spine
 
 ### 2026-07-16 — Phase 2 done: spine deployed, nightly path proven with stubs
