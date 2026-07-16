@@ -9,6 +9,7 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as path from 'path';
 
 const GEMINI_SECRET_NAME = 'study-conscience/gemini';
+const TELEGRAM_SECRET_NAME = 'study-conscience/telegram';
 
 interface ApiStackProps extends cdk.StackProps {
   stage: string;
@@ -60,11 +61,13 @@ export class ApiStack extends cdk.Stack {
     // The nightly agent: reads rollups, judges avoidance, writes the brief + drill.
     // 60s timeout and 512MB give the Gemini generate-and-grade call room to breathe.
     const geminiSecret = secretsmanager.Secret.fromSecretNameV2(this, 'GeminiSecret', GEMINI_SECRET_NAME);
+    const telegramSecret = secretsmanager.Secret.fromSecretNameV2(this, 'TelegramSecret', TELEGRAM_SECRET_NAME);
     const reasoningFn = makeFn(
       'ReasoningFn',
       'reasoning.handler',
       {
         GEMINI_SECRET_NAME,
+        TELEGRAM_SECRET_NAME,
         // gemini-flash-lite-latest: reliable + free-tier friendly. The pinned
         // gemini-2.5-flash models are gated for new accounts; the *-latest aliases
         // are not. Override with -c model=... at deploy.
@@ -75,6 +78,7 @@ export class ApiStack extends cdk.Stack {
     );
     table.grantReadWriteData(reasoningFn);
     geminiSecret.grantRead(reasoningFn);
+    telegramSecret.grantRead(reasoningFn);
 
     // EventBridge Scheduler at 03:00 Africa/Lagos. Scheduler (not a plain rule) so
     // the schedule is timezone-aware and never needs UTC/DST hand-math.
