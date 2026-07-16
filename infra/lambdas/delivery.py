@@ -1,20 +1,17 @@
 """Delivery: turn a brief into a morning message and send it.
 
-Formatting the brief into readable text is real and stays. SENDING is stubbed:
-send_telegram and send_email do not touch any network or credential yet, they log
-exactly what they would send, tagged as a stub, so the nightly path runs end to end
-without any real token.
-
-=============================== SEND IS STUBBED ===============================
-TODO(phase 3):
-  - send_telegram: read the bot token + chat id from Secrets Manager, POST to
-    https://api.telegram.org/bot<token>/sendMessage
-  - send_email: read SES (or SMTP) creds from Secrets Manager and send
-Nothing below contacts Telegram or a mail server yet.
-==============================================================================
+Formatting the brief into readable text is real. Telegram sending is wired (creds
+from Secrets Manager, with a stub fallback that just logs if the secret is missing,
+so the nightly path never crashes). Email is still stubbed until SES creds land.
 """
 import json
 import os
+import urllib.error
+import urllib.request
+
+from common import get_secret
+
+TELEGRAM_SECRET_NAME = os.environ.get("TELEGRAM_SECRET_NAME", "study-conscience/telegram")
 
 
 def format_brief(brief):
@@ -57,6 +54,10 @@ def format_brief(brief):
     if drill:
         lines.append(f"Today's drill ({drill.get('est_minutes', '?')} min): {drill.get('title', '')}")
         lines.append(f"  {drill.get('task', '')}")
+        manifest = drill.get("manifest")
+        if manifest:
+            lines.append("")
+            lines.append(manifest.rstrip())
         lines.append("")
 
     grade = brief.get("grade")
@@ -66,10 +67,44 @@ def format_brief(brief):
     return "\n".join(lines)
 
 
+def _telegram_creds():
+    if os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID"):
+        return os.environ["TELEGRAM_BOT_TOKEN"], os.environ["TELEGRAM_CHAT_ID"]
+    try:
+        s = get_secret(TELEGRAM_SECRET_NAME)
+        return s.get("bot_token"), s.get("chat_id")
+    except Exception:  # noqa: BLE001 — no secret / no access -> fall back to logging
+        return None, None
+
+
 def send_telegram(text):
-    """STUB. Logs what it would send to Telegram. No network, no token."""
-    print("[STUB telegram] would send message:\n" + text)
-    return {"channel": "telegram", "sent": False, "stub": True}
+    """Send the brief to Telegram. Falls back to logging if creds are missing.
+
+    Plain text, no parse_mode: the drill manifest is full of characters that would
+    break Markdown parsing, and a delivered-but-ugly message beats a 400.
+    """
+    token, chat_id = _telegram_creds()
+    if not token or not chat_id:
+        print("[STUB telegram] no creds, would send message:\n" + text)
+        return {"channel": "telegram", "sent": False, "stub": True}
+
+    # Telegram caps a message at 4096 chars; trim defensively.
+    body = json.dumps({"chat_id": chat_id, "text": text[:4096]}).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=body, method="POST", headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            ok = json.load(resp).get("ok", False)
+        print(f"[telegram] sent ok={ok}")
+        return {"channel": "telegram", "sent": bool(ok)}
+    except urllib.error.HTTPError as exc:
+        print(f"[telegram] send failed: HTTP {exc.code} {exc.read().decode()[:200]}")
+        return {"channel": "telegram", "sent": False, "error": f"http {exc.code}"}
+    except Exception as exc:  # noqa: BLE001
+        print(f"[telegram] send failed: {type(exc).__name__}")
+        return {"channel": "telegram", "sent": False, "error": type(exc).__name__}
 
 
 def send_email(text):
