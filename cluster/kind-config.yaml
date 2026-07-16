@@ -5,9 +5,10 @@
 #   kind create cluster --name study --config cluster/kind-config.yaml
 #   kind export kubeconfig --name study
 #
-# kindest/node:v1.35 uses kubeadm v1beta4, where apiServer.extraArgs is a LIST of
-# {name, value} objects, not a map. The old map form (in most pre-1.31 guides)
-# silently fails on 1.35.
+# kindest/node:v1.35.1 (via kind v0.32) emits kubeadm ClusterConfiguration as
+# v1beta3, where apiServer.extraArgs is a MAP of string to string. The v1beta4
+# list-of-{name,value} form is only accepted on v1.36+ images and is rejected here
+# with "cannot unmarshal array into ... extraArgs of type map[string]string".
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -20,14 +21,10 @@ nodes:
         kind: ClusterConfiguration
         apiServer:
           extraArgs:
-            - name: audit-policy-file
-              value: /etc/kubernetes/audit/policy.yaml
-            - name: audit-log-path
-              value: /var/log/kubernetes/kube-apiserver-audit.log
-            - name: audit-log-maxsize
-              value: "100"
-            - name: audit-log-maxbackup
-              value: "5"
+            audit-policy-file: /etc/kubernetes/audit/policy.yaml
+            audit-log-path: /var/log/kubernetes/kube-apiserver-audit.log
+            audit-log-maxsize: "100"
+            audit-log-maxbackup: "5"
           extraVolumes:
             - name: audit-policy
               hostPath: /etc/kubernetes/audit/policy.yaml
