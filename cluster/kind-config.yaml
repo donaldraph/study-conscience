@@ -11,7 +11,10 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
+  # Pin the exam version explicitly. kind v0.32 defaults to a newer image
+  # (v1.36.1), which would drift off the CKA/CKS/CKAD v1.35 exam environment.
   - role: control-plane
+    image: kindest/node:v1.35.1
     kubeadmConfigPatches:
       - |
         kind: ClusterConfiguration
