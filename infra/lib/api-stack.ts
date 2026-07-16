@@ -115,6 +115,15 @@ export class ApiStack extends cdk.Stack {
       .addResource('ingest')
       .addMethod('POST', new apigw.LambdaIntegration(ingestFn), { apiKeyRequired: true });
 
+    // Read routes for the dashboard. Public GET (the data is study coverage stats,
+    // not sensitive), no key.
+    const getBriefFn = makeFn('GetBriefFn', 'get_brief.handler');
+    const getHistoryFn = makeFn('GetHistoryFn', 'get_history.handler');
+    table.grantReadData(getBriefFn);
+    table.grantReadData(getHistoryFn);
+    this.api.root.addResource('brief').addMethod('GET', new apigw.LambdaIntegration(getBriefFn));
+    this.api.root.addResource('briefs').addMethod('GET', new apigw.LambdaIntegration(getHistoryFn));
+
     const key = this.api.addApiKey('IngestKey', { apiKeyName: `sc-${props.stage}-ingest` });
     const plan = this.api.addUsagePlan('IngestPlan', {
       name: `sc-${props.stage}-ingest`,
